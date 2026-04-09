@@ -1,0 +1,58 @@
+---
+title: "Week 4 exercises"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+library(boot)
+library(ggbiplot)
+```
+
+## Exercise 1: Writing your own function
+
+Create a function that rescale the elements of vector on a linear scale from 0 to 1, where 0 is corresponds to the minimum value of the vector and 1 corresponds to the maximum value of the vector. Call your function `rescale01`
+
+
+## Exercise 2: orca weights revisited
+
+Return to the orca weights dataset (`orcas_simulated.csv`) from lecture 6. Construct the 95% percentile bootstrap interval for the difference in orca weight between 2024 and 2023
+
+
+## Exercise 3: Salish Sea data revisited
+
+Consider the water temperature data at Port Townsend. Again compare the mean from 2015 versus that from 2024. Construct the 95% BCa confidence interval of the difference in mean, ignoring the time dimension and treating the two dataset as unpaired
+
+
+### Exercise 4: covariance and correlation in penguins dataset
+
+Consider the 4 numeric variables in the penguins dataset: bill length, bill depth, flipper length, and body mass.
+
+1. Compute the covariance matrix between these variables, after dropping the observations with missing measurements
+
+2. Which pair of variables have the most positive covariance? Most negative?
+
+3. Repeat (1) but with correlation matrix.
+
+4. Repeat (2) but with correlations.
+
+
+## Exercise 5: PCA on penguins dataset
+
+Again consider the penguins dataset. Again consider the 4 numeric variables bill length, bill depth, flipper length, and body mass (retain also the `species` variable, for purpose that will be clear). Again first subset the data then drop any entries that have NA's
+
+1. Perform principal component analysis on the dataset, and store the result in `penguins_pca`. Make sure you mean-subtracted and rescaled
+
+2. Which variable has the strongest association with the first principal component? How about weakest association?
+
+3. Make a cumulative scree plot (see the `type` argument of `ggscreeplot()`). If we want to keep enough principal components so that 80% of the correlation is explained, how many principal components do we need?
+
+4. Produce two form biplot of the samples (first with PC1 and PC2, second with PC3 and PC4),and use color to distinguish between the three species
+
+5. Based on the biplot(s), which principal component(s) are useful in separating the species, and which principal component(s) are not?

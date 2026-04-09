@@ -1,0 +1,211 @@
+---
+title: "Bootstrap approach"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(boot)
+```
+
+
+## Writing functions in R
+
+### A simple example
+
+A simple function that takes an input vector and create a mean-subtracted version of it
+
+```{r}
+mean_subtracted <- function(x){
+  x - mean(x)
+}
+```
+
+Apply the function on a vector and assign the return to a new vector
+
+```{r}
+x <- c(1, 8, 5, 7, 9)
+y <- mean_subtracted(x)
+print(y)
+```
+
+Note that the global `x` is not modified
+
+```{r}
+print(x)
+```
+
+### Explicit return
+
+Make a function return early (before all lines are executed) using `return()`
+
+```{r}
+standardize_bad <- function(x){
+  return(x - mean(x))
+  x / sd(x) # useless line that never got executed
+}
+```
+
+```{r}
+standardize_bad(c(-2, 0, 2))
+```
+
+For the function to work properly, let it execute until the last line and returns the result
+
+```{r}
+standardize_good <- function(x){
+  x - mean(x)
+  x / sd(x)
+}
+```
+
+```{r}
+standardize_good(c(-2, 0, 2))
+```
+
+### Scoping and copy-on-write behaviors
+
+A function cannot modify a global variable
+
+```{r}
+x <- 5  # global x
+y <- -1 # global y
+
+rewrite_xy <- function(){
+
+  # a function that, alas, does nothing
+  
+  x <- 2  # local x
+  y <- 10 # local y
+}
+
+rewrite_xy()
+
+print(x)
+print(y)
+```
+
+## Bootstrap confidence intervals
+
+### One-sample example: Thornton Creek total phosphorus
+
+The total phosphorus at various locations of water bodies are monitored by the King County. The data at the Thornton Creek mouth from 2015 on is given in the file `Thornton_phosphorus.csv`
+
+Use bootstrap approach to construct the 95% confidence interval of mean total phosphorus concentration from the data, ignoring the time dimension
+
+Load the file and inspect
+
+```{r}
+Thornton <- read_csv("data/Thornton_phosphorus.csv")
+glimpse(Thornton)
+```
+
+Writing the function that calculate mean total phosphorus given a bootstrap sample
+
+```{r}
+mean_phosphorus <- function(data, index){
+  data <- data[index,]
+  mean(data$value)
+}
+```
+
+Perform bootstrap sampling and inspect the output
+
+```{r}
+Thornton_boot <- boot(Thornton, mean_phosphorus, 2000)
+Thornton_boot
+```
+
+Extract the mean value from the original sample and from the bootstrap samples
+
+```{r}
+Thornton_boot$t0
+```
+
+```{r}
+car::some(Thornton_boot$t)
+```
+
+Find the percentile confidence interval
+
+```{r}
+Thronton_perc_ci <- boot.ci(Thornton_boot, 0.95, "perc")
+Thronton_perc_ci
+```
+
+Extract the interval programmatically
+
+```{r}
+c(Thronton_perc_ci$percent[4], Thronton_perc_ci$percent[5])
+```
+
+Find the BCa confidence interval:
+
+```{r}
+Thronton_bca_ci <- boot.ci(Thornton_boot, 0.95, "bca")
+Thronton_bca_ci
+```
+
+```{r}
+print(Thronton_bca_ci)
+```
+
+Extract the interval programmatically
+
+```{r}
+c(Thronton_bca_ci$bca[4], Thronton_bca_ci$bca[5])
+```
+
+### Two-sample example: Thornton versus Tahlequah Creeks
+
+Load the Tahlequah Creek data
+
+
+```{r}
+Tahlequah <- read_csv("data/Tahlequah_phosphorus.csv")
+```
+
+The two samples don't exactly line up, and for the purpose of this example we'll treat them as unpaired as opposed to paired
+
+```{r}
+c(nrow(Thornton), nrow(Tahlequah))
+```
+
+Step 1: combine the two data frames via `rbind()` ("row bind"). In addition, we'll code the "site" variable as factor in anticipation of using it in `boot()`
+
+(factors in R are used to encode categorical variables that can take values from finitely many choices)
+
+```{r}
+phosphorus <- rbind(Thornton, Tahlequah) |> 
+  mutate(site = as.factor(site))
+```
+
+Now we define the function that calculate the difference in means
+
+```{r}
+diff_mean <- function(data, index){
+  data <- data[index,]
+  Thornton <- filter(data, site=="Thornton Creek mouth at Sand Point Way NE")
+  Tahlequah <- filter(data, site=="Tahlequah Creek mouth at SW Pohl Rd")
+  mean(Thornton$value) - mean(Tahlequah$value)
+}
+```
+
+Construct the bootstrap samples and perform the sampling
+
+```{r}
+phosphorus_boot <- boot(phosphorus, diff_mean, 5000, strata=phosphorus$site)
+```
+
+Now construct the BCa confidence interval:
+
+```{r}
+boot.ci(phosphorus_boot, 0.95, "bca")
+```

@@ -1,0 +1,83 @@
+---
+title: "covariance and correlation"
+author: "Wing-Ho Ko"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+```
+
+## Covariance and correlation
+
+### Example: noisy quintic curve
+
+Loading the prepared dataset (quintic curve with noise)
+
+```{r}
+quintic <- read_csv("data/quintic_data.csv")
+```
+
+Plot the location of the data points
+
+```{r}
+ggplot(quintic) + geom_point(aes(x=x, y=y)) + coord_fixed()
+```
+
+Covariance between x and y
+
+```{r}
+cov(quintic$x, quintic$y)
+```
+
+Pearson's correlation between x and y
+
+```{r}
+cor(quintic$x, quintic$y)
+```
+
+Spearman's correlation between x and y
+
+```{r}
+cor(quintic$x, quintic$y, method="spearman")
+```
+
+Full covariance matrix
+
+```{r}
+cov(quintic)
+```
+
+Full correlation matrix
+
+```{r}
+cor(quintic)
+```
+
+### Example: bank notes
+
+```{r}
+banknotes <- read_csv("data/banknotes.csv")
+glimpse(banknotes)
+```
+
+```{r}
+banknotes_num <- select(banknotes, Length: Top)
+```
+
+Full covariance matrix
+
+```{r}
+cov(banknotes_num)
+```
+
+Full correlation matrix
+
+```{r}
+cor(banknotes_num)
+```
