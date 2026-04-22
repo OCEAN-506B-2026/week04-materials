@@ -27,7 +27,7 @@ Return to the orca weights dataset (`orcas_simulated.csv`) from lecture 6. Const
 
 ## Exercise 3: Salish Sea data revisited
 
-Consider the water temperature data at Port Townsend. Again compare the mean from 2015 versus that from 2024. Construct the 95% BCa confidence interval of the difference in mean, ignoring the time dimension and treating the two dataset as unpaired
+Consider the Salish Sea data seawater observations contained in the file salish_cruise_simulated_2.csv. Again compare the Tacoma Narrows and the Main Basin samples. Construct the 95% BCa confidence interval of the difference in mean salinity.
 
 
 ### Exercise 4: covariance and correlation in penguins dataset
