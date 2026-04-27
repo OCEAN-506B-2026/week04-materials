@@ -1,0 +1,174 @@
+---
+title: "Week 4 exercises comments"
+author: "Wing-Ho Ko"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading packages
+
+```{r}
+library(tidyverse)
+library(boot)
+```
+
+## Confidence intervals for paired samples
+
+### Generate test data
+
+```{r}
+set.seed(123)
+
+n <- 30
+
+sample_1 <- rlnorm(n, 2, 1)
+sample_2 <- sample_1 + rnorm(n, 5, 5)
+
+pairs_long <- data.frame(
+  tag = rep(1:n, times=2),
+  year = rep(c(2020, 2021), each=n),
+  value = c(sample_1, sample_2)
+)
+```
+
+```{r}
+pairs_long
+```
+
+### Checking assumption for normality
+
+```{r}
+ggplot(pairs_long, aes(sample=value)) + geom_qq() + geom_qq_line() + 
+  facet_grid(~year)
+```
+
+```{r}
+pairs_wide <- pivot_wider(
+  pairs_long, 
+  names_from="year", 
+  names_prefix="year_",
+  values_from="value"
+) |> 
+  mutate(diff = year_2021 - year_2020)
+
+pairs_wide
+```
+
+
+```{r}
+ggplot(pairs_wide, aes(sample=diff)) + geom_qq() + geom_qq_line()
+```
+
+Even though EACH sample is non-normal, it is actually fine to use t-test, since the **difference** is normally distributed!
+
+### bootstrap confidence interval
+
+```{r}
+mean_diff <- function(data, indices){
+  data <- data[indices,]
+  mean(data$diff)
+}
+```
+
+```{r}
+pairs_boot <- boot(pairs_wide, mean_diff, 2000)
+pairs_ci <- boot.ci(pairs_boot, type="bca")
+pairs_ci
+```
+
+
+## Stratified vs non-stratified bootstrap
+
+### Generating test data
+
+Generate two samples from two uniform distributions
+
+```{r}
+set.seed(42)
+
+n1 <- 100
+n2 <- 10
+
+sample_1 <- runif(n1, 1.5, 2.5)
+sample_2 <- runif(n2, 0.25, 0.75)
+
+test_data <- data.frame(
+  label = c(rep(1, each=n1), rep(2, each=n2)),
+  value = c(sample_1, sample_2)
+)
+```
+
+```{r}
+test_data
+```
+
+
+### Counting the number of observations drew from sample 2
+
+A function that count the difference in number of observations from each sample in a bootstrap sample
+
+```{r}
+count_n1 <- function(data, index){
+  data <- data[index,]
+  sample_1 <- filter(data, label==1)
+  nrow(sample_1)
+}
+
+count_n2 <- function(data, index){
+  data <- data[index,]
+  sample_2 <- filter(data, label==2)
+  nrow(sample_2)
+}
+```
+
+Stratified vs non-stratified bootstrap
+
+```{r}
+count_boot_ns <- boot(test_data, count_n2, 2000)
+count_boot_s <- boot(test_data, count_n2, 2000, strata=test_data$label)
+```
+
+Non-stratified bootstrap include bootstrap samples for which the number of observations drew from sample 2 differ from the actual number of observations in sample 2.
+
+```{r}
+ggplot() + geom_bar(aes(x=count_boot_ns$t)) + xlim(-1, 25)
+```
+
+Stratified bootstrap only sample from the subspace where the number of observations drew from each sample is the same.
+
+```{r}
+ggplot() + geom_bar(aes(x=count_boot_s$t)) + xlim(-1, 25)
+```
+
+### Look at the difference in confidence interval
+
+Function to calculate the difference in mean
+
+```{r}
+mean_ratio <- function(data, index){
+  data <- data[index,]
+  sample_1 <- filter(data, label==1)
+  sample_2 <- filter(data, label==2)
+  mean(sample_1$value) / mean(sample_2$value)
+}
+```
+
+CI from non-stratified bootstrap
+
+```{r}
+ratio_boot_ns <- boot(test_data, mean_ratio, 5000)
+boot.ci(ratio_boot_ns, type="bca")
+```
+
+CI from stratified bootstrap
+
+```{r}
+ratio_boot_s <- boot(test_data, mean_ratio, 5000, strata=test_data$label)
+boot.ci(ratio_boot_s, type="bca")
+```
+
+Note that they are different beyond uncertainty introduced by finite R (= number of replicates). The stratified bootstrap gives the correct answer here because it corresponds to the sampling protocol of the original data
+
